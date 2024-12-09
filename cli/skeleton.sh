@@ -8,6 +8,9 @@ SKELETON=$1
 TARGET=$SKELETON
 SKELETON_BRANCH=skeleton
 WORKDIR=$(pwd)
+MODULE_DIR=$(dirname $(realpath $0))
+
+VERSION=$(jq -r '.version' $MODULE_DIR/../package.json)
 
 # error if skeleton is not specified
 if [ -z "$SKELETON" ]; then
@@ -30,6 +33,8 @@ while getopts ":r:hb:" opt; do
         SKELETON_BRANCH=$OPTARG
         ;;
     h)
+        echo "@smallhillcz/skeleton v$VERSION"
+        echo ""
         echo "Usage:"
         echo "  $CMD [options] <skeleton> [<target>]"
         echo "Options:"
