@@ -1,16 +1,18 @@
 #!/bin/bash -e
 
-REPO=https://github.com/smallhillcz/skeletons
+PACKAGE_ROOT=$(realpath "$(dirname $(realpath $0))/..")
 CMD=$(basename $0)
+
+REPO=https://github.com/smallhillcz/skeletons
 TEMP_DIR=$(mktemp -d)
 # TEMP_DIR=/workspaces/tmp
+SKELETON_BRANCH=skeleton
+
 SKELETON=$1
 TARGET=$SKELETON
-SKELETON_BRANCH=skeleton
 WORKDIR=$(pwd)
-MODULE_DIR=$(dirname $(realpath $0))
 
-VERSION=$(jq -r '.version' $MODULE_DIR/../package.json)
+VERSION=$(jq -r '.version' $PACKAGE_ROOT/package.json)
 
 # error if skeleton is not specified
 if [ -z "$SKELETON" ]; then
