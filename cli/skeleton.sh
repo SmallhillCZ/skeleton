@@ -105,6 +105,11 @@ git add $TARGET
 # if no staged files, exit
 if [ -z "$(git diff --cached --exit-code)" ]; then
     echo "No changes"
+
+    # cleanup
+    rm -rf $TEMP_DIR
+    cd $WORKDIR
+    exit 0
 elif [ -z "$TARGET_EXISTS" ]; then
     git commit -m "feat(skeleton): update ./$TARGET from $SKELETON_ORIGIN#$SKELETON"
 else
@@ -125,3 +130,5 @@ echo "Merging changes from \033[33m$SKELETON_BRANCH\033[0m to \033[33m$TARGET_BR
 
 git switch $TARGET_BRANCH
 git merge --no-ff --no-edit --allow-unrelated-histories origin/$SKELETON_BRANCH
+
+cd $WORKDIR
