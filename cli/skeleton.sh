@@ -1,18 +1,15 @@
 #!/bin/bash -e
 
-PACKAGE_ROOT=$(realpath "$(dirname $(realpath $0))/..")
-CMD=$(basename $0)
+SKELETON_ORIGIN=https://github.com/smallhillcz/skeletons
+SKELETON_BRANCH=skeleton
 
-REPO=https://github.com/smallhillcz/skeletons
+WORKDIR=$(pwd)
 TEMP_DIR=$(mktemp -d)
 # TEMP_DIR=/workspaces/tmp
-SKELETON_BRANCH=skeleton
 
 SKELETON=$1
 TARGET=$SKELETON
-WORKDIR=$(pwd)
 
-VERSION=$(jq -r '.version' $PACKAGE_ROOT/package.json)
 
 # error if skeleton is not specified
 if [ -z "$SKELETON" ]; then
@@ -35,6 +32,9 @@ while getopts ":r:hb:" opt; do
         SKELETON_BRANCH=$OPTARG
         ;;
     h)
+        CMD=$(basename $0)
+        PACKAGE_ROOT=$(realpath "$(dirname $(realpath $0))/..")
+        VERSION=$(jq -r '.version' $PACKAGE_ROOT/package.json)
         echo "@smallhillcz/skeleton v$VERSION"
         echo ""
         echo "Usage:"
@@ -51,79 +51,77 @@ while getopts ":r:hb:" opt; do
     esac
 done
 
-REPO_ROOT=$(git rev-parse --show-toplevel)
-REPO_BRANCH=$(git branch --show-current)
+TARGET_ROOT=$(git rev-parse --show-toplevel)
+TARGET_BRANCH=$(git branch --show-current)
+TARGET_ORIGIN=$(git remote get-url origin)
 
-cd $REPO_ROOT
+if [ -z "$TARGET_ORIGIN" ]; then
+    echo "No origin URL found"
+    exit 1
+fi
+
+cd $TEMP_DIR
+
 
 # issue warning when REPO_BRANCH is equal to SKELETON_BRANCH
-if [ "$REPO_BRANCH" == "$SKELETON_BRANCH" ]; then
-    echo -e "\033[33mWarning:\033[0m current branch ($REPO_BRANCH) is equal to skeleton branch ($SKELETON_BRANCH)"
+if [ "$TARGET_BRANCH" == "$SKELETON_BRANCH" ]; then
+    echo -e "\033[33mWarning:\033[0m current branch ($TARGET_BRANCH) is equal to skeleton branch ($SKELETON_BRANCH)"
 fi
 
-if [ -e $REPO_ROOT/$TARGET ]; then
-    TARGET_EXISTS=1
-fi
+git clone --quiet --depth=1 $SKELETON_ORIGIN skeleton
 
-if [ -z $TARGET_EXISTS ]; then
-    echo -e "Adding \033[33m$SKELETON\033[0m from \033[33m$REPO\033[0m to \033[33m$TARGET\033[0m in \033[33mskeleton\033[0m branch and merging to \033[33m$REPO_BRANCH\033[0m"
-else
-    echo -e "Updating \033[33m$SKELETON\033[0m from \033[33m$REPO\033[0m to \033[33m$TARGET\033[0m in \033[33mskeleton\033[0m branch and merging to \033[33m$REPO_BRANCH\033[0m"
+if [ ! -e "$TEMP_DIR/skeleton/$SKELETON" ]; then
+    echo "Skeleton $SKELETON not found in $SKELETON_ORIGIN"
+    rm -fr $TEMP_DIR
+    exit 1
 fi
 
 echo ""
 
-git clone --quiet --depth=1 $REPO $TEMP_DIR/skeleton 1>/dev/null
-
-if [ ! -e "$TEMP_DIR/skeleton/$SKELETON" ]; then
-    echo "Skeleton $SKELETON not found in $REPO"
-    rm -fr $TEMP_DIR 1>/dev/null
-    exit 1
-fi
-
-if git show-ref --quiet refs/heads/$SKELETON_BRANCH; then
-    git switch $SKELETON_BRANCH 1>/dev/null
+if git clone --quiet -b $SKELETON_BRANCH --depth=1 $TARGET_ORIGIN target; then
+    cd target
 else
-    git switch -c $SKELETON_BRANCH 1>/dev/null
+    echo -e "Branch \033[33m$SKELETON_BRANCH\033[0m not found in \033[33m$TARGET_ORIGIN\033[0m, initializing..."
+    mkdir target
+    cd target
+    git init -b $SKELETON_BRANCH
+    git commit -m "feat(skeleton): init" --allow-empty
+    git remote add origin $TARGET_ORIGIN
 fi
 
-# move untracked files from original branch out of the way
-git stash -a 1>/dev/null
+if [ -e $TARGET ]; then
+    echo -e "Updating \033[33m./$TARGET\033[0m in \033[33morigin/$SKELETON_BRANCH\033[0m branch using skeleton \033[33m$SKELETON_ORIGIN#$SKELETON\033[0m"
+else
+    echo -e "Adding skeleton \033[33m$REPO#$SKELETON\033[0m as \033[33m./$TARGET\033[0m to \033[33morigin/$SKELETON_BRANCH\033[0m branch"
+fi
+
 
 # remove target directory and copy new skeleton
-rm -fr $REPO_ROOT/$TARGET 1>/dev/null
-cp -r $TEMP_DIR/skeleton/$SKELETON $REPO_ROOT/$TARGET 1>/dev/null
+rm -fr $TARGET
+cp -r ../skeleton/$SKELETON $TARGET
 
-git add -A $REPO_ROOT/$TARGET
-
-# return untracked files back
-git stash pop 1>/dev/null
+git add $TARGET
 
 # if no staged files, exit
 if [ -z "$(git diff --cached --exit-code)" ]; then
     echo "No changes"
-
-    # cleanup
-    rm -fr $TEMP_DIR/skeleton 1>/dev/null
-    rm -d $TEMP_DIR 1>/dev/null
-
-    # return to original branch
-    git switch $REPO_BRANCH 1>/dev/null
-    exit 0
-fi
-
-# merge changes to original branch
-if [ -z "$TARGET_EXISTS" ]; then
-    git commit -m "feat(skeleton): add $TARGET from $REPO#$SKELETON"
+elif [ -z "$TARGET_EXISTS" ]; then
+    git commit -m "feat(skeleton): update ./$TARGET from $SKELETON_ORIGIN#$SKELETON"
 else
-    git commit -m "feat(skeleton): update $TARGET from $REPO#$SKELETON"
+    git commit -m "feat(skeleton): add ./$TARGET from $SKELETON_ORIGIN#$SKELETON"
 fi
+
+git push -u origin $SKELETON_BRANCH
 
 # cleanup
-rm -fr $TEMP_DIR/skeleton 1>/dev/null
-rm -d $TEMP_DIR 1>/dev/null
+rm -rf $TEMP_DIR
+
+# merge changes to original branch
+cd $TARGET_ROOT
+git fetch origin $SKELETON_BRANCH
 
 # return to original branch and merge
-git switch $REPO_BRANCH 1>/dev/null
+echo "Merging changes from \033[33m$SKELETON_BRANCH\033[0m to \033[33m$TARGET_BRANCH\033[0m..."
 
-git merge --no-ff --no-edit $SKELETON_BRANCH
+git switch $TARGET_BRANCH
+git merge --no-ff --no-edit --allow-unrelated-histories origin/$SKELETON_BRANCH
