@@ -95,17 +95,17 @@ else
     git remote add origin $TARGET_ORIGIN
 fi
 
-if [ -e $TARGET ]; then
+if [ -e "./$TARGET" ]; then
     echo -e "Updating \033[33m./$TARGET\033[0m in \033[33morigin/$SKELETON_BRANCH\033[0m branch using skeleton \033[33m$SKELETON_ORIGIN#$SKELETON\033[0m"
     TARGET_EXISTS=yes
 else
-    echo -e "Adding skeleton \033[33m$REPO#$SKELETON\033[0m as \033[33m./$TARGET\033[0m to \033[33morigin/$SKELETON_BRANCH\033[0m branch"
+    echo -e "Adding skeleton \033[33m$SKELETON_ORIGIN#$SKELETON\033[0m as \033[33m./$TARGET\033[0m to \033[33morigin/$SKELETON_BRANCH\033[0m branch"
     TARGET_EXISTS=no
 fi
 
 
-# remove target directory and copy new skeleton
-rm -fr $TARGET
+# remove target and copy new skeleton
+rm -fr "./$TARGET"
 cp -r ../skeleton/$SKELETON $TARGET
 
 git add $TARGET
@@ -119,9 +119,9 @@ if [ -z "$(git diff --cached --exit-code)" ]; then
     cd $WORKDIR
     exit 0
 elif [ "$TARGET_EXISTS" = "yes" ]; then
-    git commit -m "${COMMIT_PREFIX}add ./$TARGET from $SKELETON_ORIGIN#$SKELETON"
-else
     git commit -m "${COMMIT_PREFIX}update ./$TARGET from $SKELETON_ORIGIN#$SKELETON"
+else
+    git commit -m "${COMMIT_PREFIX}add ./$TARGET from $SKELETON_ORIGIN#$SKELETON"
 fi
 
 git push -u origin $SKELETON_BRANCH
