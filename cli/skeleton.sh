@@ -97,8 +97,10 @@ fi
 
 if [ -e $TARGET ]; then
     echo -e "Updating \033[33m./$TARGET\033[0m in \033[33morigin/$SKELETON_BRANCH\033[0m branch using skeleton \033[33m$SKELETON_ORIGIN#$SKELETON\033[0m"
+    TARGET_EXISTS=yes
 else
     echo -e "Adding skeleton \033[33m$REPO#$SKELETON\033[0m as \033[33m./$TARGET\033[0m to \033[33morigin/$SKELETON_BRANCH\033[0m branch"
+    TARGET_EXISTS=no
 fi
 
 
@@ -116,7 +118,7 @@ if [ -z "$(git diff --cached --exit-code)" ]; then
     rm -rf $TEMP_DIR
     cd $WORKDIR
     exit 0
-elif [ -z "$TARGET_EXISTS" ]; then
+elif [ "$TARGET_EXISTS" = "yes" ]; then
     git commit -m "${COMMIT_PREFIX}add ./$TARGET from $SKELETON_ORIGIN#$SKELETON"
 else
     git commit -m "${COMMIT_PREFIX}update ./$TARGET from $SKELETON_ORIGIN#$SKELETON"
