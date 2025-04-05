@@ -10,6 +10,7 @@ TEMP_DIR=$(mktemp -d)
 SKELETON=$1
 TARGET=$SKELETON
 
+COMMIT_PREFIX="chore(skeleton): "
 
 # error if skeleton is not specified
 if [ -z "$SKELETON" ]; then
@@ -31,6 +32,9 @@ while getopts ":r:hb:" opt; do
     b)
         SKELETON_BRANCH=$OPTARG
         ;;
+    c)
+        COMMIT_PREFIX=$OPTARG
+        ;;
     h)
         CMD=$(basename $0)
         PACKAGE_ROOT=$(realpath "$(dirname $(realpath $0))/..")
@@ -40,8 +44,10 @@ while getopts ":r:hb:" opt; do
         echo "Usage:"
         echo "  $CMD [options] <skeleton> [<target>]"
         echo "Options:"
-        echo "  -r <repo>  Use custom repo (default: https://github.com/smallhillcz/skeletons)"
-        echo "  -b <branch>  Use custom branch for skeletons (default: skeleton)"
+        echo "  -h                  Show this help message"
+        echo "  -r <repo>           Use custom repo (default: https://github.com/smallhillcz/skeletons)"
+        echo "  -b <branch>         Use custom branch for skeletons (default: skeleton)"
+        echo "  -c <commit-prefix>  Use custom commit prefix (default: \"chore(skeleton): \")"
         exit 0
         ;;
     \?)
@@ -85,7 +91,7 @@ else
     mkdir target
     cd target
     git init -b $SKELETON_BRANCH
-    git commit -m "feat(skeleton): init" --allow-empty
+    git commit -m "${COMMIT_PREFIX}init" --allow-empty
     git remote add origin $TARGET_ORIGIN
 fi
 
@@ -111,9 +117,9 @@ if [ -z "$(git diff --cached --exit-code)" ]; then
     cd $WORKDIR
     exit 0
 elif [ -z "$TARGET_EXISTS" ]; then
-    git commit -m "feat(skeleton): update ./$TARGET from $SKELETON_ORIGIN#$SKELETON"
+    git commit -m "${COMMIT_PREFIX}add ./$TARGET from $SKELETON_ORIGIN#$SKELETON"
 else
-    git commit -m "feat(skeleton): add ./$TARGET from $SKELETON_ORIGIN#$SKELETON"
+    git commit -m "${COMMIT_PREFIX}update ./$TARGET from $SKELETON_ORIGIN#$SKELETON"
 fi
 
 git push -u origin $SKELETON_BRANCH
