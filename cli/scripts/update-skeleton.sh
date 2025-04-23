@@ -49,7 +49,7 @@ if [ -z "$(git diff --cached --exit-code)" ]; then
     rm -rf $TEMP_DIR
     cd $WORKDIR
     exit 0
-elif [ "$action" = "update" ]; then
+elif [ "$ACTION" = "update" ]; then
     git commit -m "${COMMIT_PREFIX}update ./$TARGET from $SKELETON_ORIGIN#$SKELETON"
 else
     git commit -m "${COMMIT_PREFIX}add ./$TARGET from $SKELETON_ORIGIN#$SKELETON"
