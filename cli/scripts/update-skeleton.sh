@@ -28,7 +28,7 @@ if git clone --quiet -b $SKELETON_BRANCH --depth=1 $TARGET_ORIGIN target; then
     cd target
 else
     echo -e "Branch \033[33m$SKELETON_BRANCH\033[0m not found in \033[33m$TARGET_ORIGIN\033[0m, initializing..."
-    mkdir target
+    mkdir -p target
     cd target
     git init -b $SKELETON_BRANCH
     git commit -m "${COMMIT_PREFIX}init" --allow-empty
