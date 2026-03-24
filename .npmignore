@@ -1,2 +1,5 @@
 .github
 .prettierrc.yml
+cli/src
+tsconfig.json
+build.mjs
