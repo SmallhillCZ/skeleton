@@ -2,4 +2,4 @@
 .prettierrc.yml
 cli/src
 tsconfig.json
-tsup.config.ts
+build.mjs
